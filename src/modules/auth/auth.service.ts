@@ -34,11 +34,13 @@ export class AuthService {
       },
     });
 
-    const checkPhone = await this.prisma.user.findUnique({
-      where: {
-        phone: data.phone,
-      },
-    });
+    const checkPhone = data.contactNumber
+      ? await this.prisma.user.findUnique({
+          where: {
+            contactNumber: data.contactNumber,
+          },
+        })
+      : null;
 
     if (user)
       throw new BadRequestException(ERROR_MESSAGES.USER.USER_ALREADY_EXISTS);
@@ -49,17 +51,17 @@ export class AuthService {
 
     const create = await this.prisma.user.create({
       data: {
-        name: data.name,
+        userName: data.userName,
         email: data.email,
-        phone: data.phone,
+        contactNumber: data.contactNumber || null,
         password: hastPassword,
       },
       select: {
         userId: true,
-        name: true,
+        userName: true,
         email: true,
-        phone: true,
-        profile: true,
+        contactNumber: true,
+        profilePhotoUrl: true,
         role: true,
       },
     });
@@ -78,7 +80,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (user.verifidStatus === 'SUSPEND') {
+    if (user.status === 'SUSPENDED') {
       throw new ForbiddenException('Account suspended');
     }
 
@@ -91,7 +93,7 @@ export class AuthService {
 
     await this.updateRefreshToken(user.userId, tokens.refreshToken);
 
-    const { password, otp, refreshToken, ...rest } = user;
+    const { password, refreshToken, ...rest } = user;
 
     return {
       message: 'Login successful',
@@ -108,7 +110,7 @@ export class AuthService {
     });
     if (!user) throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
 
-    const { password, otp, refreshToken, ...rest } = user;
+    const { password, refreshToken, ...rest } = user;
 
     return rest;
   }

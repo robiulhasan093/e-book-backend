@@ -28,7 +28,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"01700000000\",\n  \"password\": \"Password@123\"\n}",
+              "raw": "{\n  \"userName\": \"johndoe\",\n  \"email\": \"john@example.com\",\n  \"contactNumber\": \"01700000000\",\n  \"password\": \"Password@123\"\n}",
               "options": { "raw": { "language": "json" } }
             }
           },
@@ -37,7 +37,7 @@
               "name": "201 Created",
               "status": "Created",
               "code": 201,
-              "body": "{\n  \"statusCode\": 201,\n  \"message\": \"Registration successful. Please verify your email\",\n  \"meta\": null,\n  \"data\": {\n    \"userId\": \"uuid\",\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"01700000000\",\n    \"profile\": null,\n    \"role\": \"USER\"\n  },\n  \"timestamp\": \"2026-05-18T16:00:00.000Z\"\n}"
+              "body": "{\n  \"statusCode\": 201,\n  \"message\": \"Registration successful. Please verify your email\",\n  \"meta\": null,\n  \"data\": {\n    \"userId\": \"uuid\",\n    \"userName\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"contactNumber\": \"01700000000\",\n    \"profilePhotoUrl\": null,\n    \"role\": \"USER\"\n  },\n  \"timestamp\": \"2026-05-18T16:00:00.000Z\"\n}"
             }
           ]
         },
@@ -57,7 +57,7 @@
                   "  pm.collectionVariables.set('accessToken', token);",
                   "",
                   "  // Store role-specific token",
-                  "  if (role === 'USER' || role === 'ELEVATOR') {",
+                  "  if (role === 'USER') {",
                   "    pm.collectionVariables.set('userToken', token);",
                   "    console.log('userToken set for role:', role);",
                   "  } else if (role === 'ADMIN' || role === 'SUPER_ADMIN') {",
@@ -89,7 +89,7 @@
               "name": "200 OK",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"statusCode\": 200,\n  \"message\": \"Login successful\",\n  \"meta\": null,\n  \"data\": {\n    \"tokens\": {\n      \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n      \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\"\n    },\n    \"user\": {\n      \"userId\": \"uuid\",\n      \"name\": \"John Doe\",\n      \"email\": \"john@example.com\",\n      \"phone\": \"01700000000\",\n      \"role\": \"USER\"\n    }\n  },\n  \"timestamp\": \"2026-05-18T16:00:00.000Z\"\n}"
+              "body": "{\n  \"statusCode\": 200,\n  \"message\": \"Login successful\",\n  \"meta\": null,\n  \"data\": {\n    \"tokens\": {\n      \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n      \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\"\n    },\n    \"user\": {\n      \"userId\": \"uuid\",\n      \"userName\": \"johndoe\",\n      \"email\": \"john@example.com\",\n      \"contactNumber\": \"01700000000\",\n      \"role\": \"USER\"\n    }\n  },\n  \"timestamp\": \"2026-05-18T16:00:00.000Z\"\n}"
             }
           ]
         },
@@ -107,7 +107,7 @@
                   "",
                   "  pm.collectionVariables.set('accessToken', token);",
                   "",
-                  "  if (role === 'USER' || role === 'ELEVATOR') {",
+                  "  if (role === 'USER') {",
                   "    pm.collectionVariables.set('userToken', token);",
                   "    console.log('userToken set for role:', role);",
                   "  } else if (role === 'ADMIN' || role === 'SUPER_ADMIN') {",
@@ -183,7 +183,7 @@
               "name": "200 OK",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"statusCode\": 200,\n  \"message\": \"User profile fetched successfully\",\n  \"meta\": null,\n  \"data\": {\n    \"userId\": \"uuid\",\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"01700000000\",\n    \"role\": \"USER\",\n    \"profile\": null,\n    \"isNotification\": true,\n    \"isAgree\": false,\n    \"verifidStatus\": \"REQUEST\",\n    \"createdAt\": \"2026-05-18T16:00:00.000Z\",\n    \"updatedAt\": \"2026-05-18T16:00:00.000Z\"\n  },\n  \"timestamp\": \"2026-05-18T16:00:00.000Z\"\n}"
+              "body": "{\n  \"statusCode\": 200,\n  \"message\": \"User profile fetched successfully\",\n  \"meta\": null,\n  \"data\": {\n    \"userId\": \"uuid\",\n    \"userName\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"contactNumber\": \"01700000000\",\n    \"role\": \"USER\",\n    \"profilePhotoUrl\": null,\n    \"status\": \"ACTIVE\",\n    \"createdAt\": \"2026-05-18T16:00:00.000Z\",\n    \"updatedAt\": \"2026-05-18T16:00:00.000Z\"\n  },\n  \"timestamp\": \"2026-05-18T16:00:00.000Z\"\n}"
             }
           ]
         }

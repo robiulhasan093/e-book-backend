@@ -46,6 +46,7 @@ model User {
   email           String            @unique
   contactNumber   String?           @unique
   password        String
+  refreshToken    String?
 
   role            UserRole          @default(USER)
   status          UserStatus        @default(ACTIVE)
