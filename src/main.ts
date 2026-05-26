@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/filters';
+import { HttpExceptionFilter, PrismaExceptionFilter } from './common/filters';
 import {
   LoggingInterceptor,
   TransformInterceptor,
@@ -15,6 +15,7 @@ import {
   setupSecurity,
   setupSwagger,
 } from './common/server/server.main.file';
+import { HttpAdapterHost } from '@nestjs/core';
 
 export async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -30,6 +31,19 @@ export async function bootstrap() {
   // Global prefix: all routes are served under /api/v1/<route>
   app.setGlobalPrefix('api');
 
+  app.use('/', (req: any, res: any, next: any) => {
+    if (req.path === '/' && req.method === 'GET') {
+      return res.status(200).json({
+        statusCode: 200,
+        message: 'Success',
+        meta: null,
+        data: `${configService.get<string>('APP_NAME')} Running Successfully!`,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    next();
+  });
+
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
@@ -37,8 +51,13 @@ export async function bootstrap() {
 
   setupSecurity(app, configService, nodeEnv);
 
+  const { httpAdapter } = app.get(HttpAdapterHost);
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(
+    new HttpExceptionFilter(),
+    new PrismaExceptionFilter(httpAdapter),
+  );
   app.useGlobalInterceptors(
     new LoggingInterceptor(),
     new TransformInterceptor(),
@@ -51,7 +70,7 @@ export async function bootstrap() {
   const server = await app.listen(port, '0.0.0.0');
 
   logger.log(`App: http://localhost:${port}`);
-  logger.log(`API: http://localhost:${port}/api/v1`);
+  logger.log(`API: http://localhost:${port}`);
   logger.log(`Docs: http://localhost:${port}/docs`);
 
   const shutdown = async () => {

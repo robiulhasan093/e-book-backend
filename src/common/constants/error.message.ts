@@ -12,6 +12,8 @@ export const ERROR_MESSAGES = {
     INVALID_OTP: 'Invalid OTP code',
     OTP_EXPIRED: 'OTP has expired. Please request a new one',
     TOO_MANY_ATTEMPTS: 'Too many attempts. Please try again later',
+    OLD_PASSWORD_INCORRECT: 'Old password is incorrect',
+    SAME_PASSWORD: 'New password must be different from old password',
   },
 
   // User

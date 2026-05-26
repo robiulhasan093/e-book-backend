@@ -7,6 +7,8 @@ export const SUCCESS_MESSAGES = {
     EMAIL_VERIFIED: 'Email verified successfully',
     PASSWORD_RESET: 'Password reset successfully',
     OTP_SENT: 'OTP sent successfully',
+    OTP_VERIFIED: 'OTP verified successfully',
+    PASSWORD_CHANGED: 'Password changed successfully',
   },
 
   // User

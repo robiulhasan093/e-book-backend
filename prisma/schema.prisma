@@ -42,14 +42,20 @@ enum BookStatus {
 model User {
   userId          String            @id @default(uuid()) @db.Uuid
   profilePhotoUrl String?
-  userName        String            @unique
+  userName        String            
   email           String            @unique
   contactNumber   String?           @unique
   password        String
   refreshToken    String?
+  otpCode         String?
+  otpExpiry       DateTime?
 
   role            UserRole          @default(USER)
   status          UserStatus        @default(ACTIVE)
+  isVerified      Boolean           @default(false)
+  verificationOtp   String?         @unique
+  verificationOtpExpiry DateTime?
+  lastLogin       DateTime?
 
   created_at      DateTime          @default(now())
   updated_at      DateTime          @updatedAt
