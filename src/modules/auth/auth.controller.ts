@@ -30,7 +30,10 @@ import { GetCurrentUser } from 'src/common/decorator/get-current-user.decorator'
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { sendResponse } from 'src/common/helpers/api-response.helper';
 import { ForgotPasswordDto } from './dto/forgot.password.dto';
-import { ResendVerificationOtpDto, ResendForgotPasswordOtpDto } from './dto/resend-otp.dto';
+import {
+  ResendVerificationOtpDto,
+  ResendForgotPasswordOtpDto,
+} from './dto/resend-otp.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
 import { AuthService } from './auth.service';
 import { VerifyOtpDto } from './dto/verify.otp.dto';
@@ -39,7 +42,7 @@ import { ResetPasswordDto } from './dto/reset.password.dto';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   // ---------------------------------------------------------------------
   // Email verification endpoint
@@ -72,22 +75,33 @@ export class AuthController {
   @ApiOkResponse({ description: 'Login successful' })
   async signIn(@Body() data: LoginDto) {
     const result = await this.authService.signIn(data);
-    return sendResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGIN_SUCCESS, result);
+    return sendResponse(
+      HttpStatus.OK,
+      SUCCESS_MESSAGES.AUTH.LOGIN_SUCCESS,
+      result,
+    );
   }
 
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Change Password" })
-  @ApiCreatedResponse({ description: "Password changed successfully" })
-  async changePassword(@Body() data: ChangePasswordDto, @GetCurrentUser() user: any) {
+  @ApiOperation({ summary: 'Change Password' })
+  @ApiCreatedResponse({ description: 'Password changed successfully' })
+  async changePassword(
+    @Body() data: ChangePasswordDto,
+    @GetCurrentUser() user: any,
+  ) {
     const result = await this.authService.changePassword(data, user);
-    return sendResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.PASSWORD_CHANGED, result);
+    return sendResponse(
+      HttpStatus.OK,
+      SUCCESS_MESSAGES.AUTH.PASSWORD_CHANGED,
+      result,
+    );
   }
 
-  @ApiOperation({ summary: "Forgot Password" })
-  @ApiCreatedResponse({ description: "OTP sent successfully" })
+  @ApiOperation({ summary: 'Forgot Password' })
+  @ApiCreatedResponse({ description: 'OTP sent successfully' })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() data: ForgotPasswordDto) {
@@ -95,7 +109,7 @@ export class AuthController {
     return sendResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.OTP_SENT, result);
   }
 
-    // ---------------------------------------------------------------------
+  // ---------------------------------------------------------------------
   // Resend OTP endpoints
   // ---------------------------------------------------------------------
 
@@ -117,22 +131,30 @@ export class AuthController {
     return sendResponse(HttpStatus.OK, 'Forgot password OTP resent', result);
   }
 
-  @ApiOperation({ summary: "Verify OTP for Password Reset" })
-  @ApiOkResponse({ description: "OTP verified successfully" })
+  @ApiOperation({ summary: 'Verify OTP for Password Reset' })
+  @ApiOkResponse({ description: 'OTP verified successfully' })
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   async verifyOtp(@Body() data: VerifyOtpDto) {
     const result = await this.authService.verifyOtp(data);
-    return sendResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.OTP_VERIFIED || 'OTP verified successfully', result);
+    return sendResponse(
+      HttpStatus.OK,
+      SUCCESS_MESSAGES.AUTH.OTP_VERIFIED || 'OTP verified successfully',
+      result,
+    );
   }
 
-  @ApiOperation({ summary: "Reset Password" })
-  @ApiOkResponse({ description: "Password reset successfully" })
+  @ApiOperation({ summary: 'Reset Password' })
+  @ApiOkResponse({ description: 'Password reset successfully' })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() data: ResetPasswordDto) {
     const result = await this.authService.resetPassword(data);
-    return sendResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.PASSWORD_CHANGED || 'Password reset successfully', result);
+    return sendResponse(
+      HttpStatus.OK,
+      SUCCESS_MESSAGES.AUTH.PASSWORD_CHANGED || 'Password reset successfully',
+      result,
+    );
   }
 
   @Post('refresh-token')
@@ -156,7 +178,11 @@ export class AuthController {
       throw new UnauthorizedException('Invalid token');
     }
     const result = await this.authService.findUser(user.userId);
-    return sendResponse(HttpStatus.OK, 'User profile fetched successfully', result);
+    return sendResponse(
+      HttpStatus.OK,
+      'User profile fetched successfully',
+      result,
+    );
   }
 
   // ---------------------------------------------------------------------
@@ -176,8 +202,11 @@ export class AuthController {
     @GetCurrentUser() user: any,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    const result = await this.authService.updateProfile(dto, { userId: user.userId }, file);
+    const result = await this.authService.updateProfile(
+      dto,
+      { userId: user.userId },
+      file,
+    );
     return sendResponse(HttpStatus.OK, 'Profile updated', result);
   }
 }
-

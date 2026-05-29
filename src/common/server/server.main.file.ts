@@ -140,7 +140,9 @@ export function setupSwagger(app: any, nodeEnv: string, port: number): void {
     .setTitle('NestJS Prisma Template API')
     .setDescription(
       'A production-ready NestJS + Prisma API template.\n\n' +
-        '        **Base URL:** `http://localhost:' + port + '`\n\n' +
+        '        **Base URL:** `http://localhost:' +
+        port +
+        '`\n\n' +
         '        **Auth:** Use the `POST /api/v1/auth/login` endpoint to obtain a Bearer token, ' +
         'then click **Authorize** above.',
     )

@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { BookCategoryModule } from './modules/book-category/book-category.module';
 import envConfig from './config/env.config';
 
 @Module({
@@ -20,6 +21,7 @@ import envConfig from './config/env.config';
     AuthModule,
     UserModule,
     CloudinaryModule,
+    BookCategoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

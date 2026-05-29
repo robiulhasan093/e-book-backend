@@ -12,7 +12,11 @@ export class UpdateProfileDto {
   @IsString()
   contactNumber?: string;
 
-  @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Profile image file' })
+  @ApiPropertyOptional({
+    type: 'string',
+    format: 'binary',
+    description: 'Profile image file',
+  })
   @IsOptional()
   file?: any;
 }

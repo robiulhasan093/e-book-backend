@@ -16,7 +16,10 @@ function createTransporter() {
 /**
  * Send an email verification link to the user.
  */
-export async function sendVerificationEmail(to: string, token: string): Promise<void> {
+export async function sendVerificationEmail(
+  to: string,
+  token: string,
+): Promise<void> {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
 

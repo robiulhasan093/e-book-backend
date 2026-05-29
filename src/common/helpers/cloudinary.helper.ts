@@ -17,7 +17,8 @@ export const uploadImageToCloudinary = (
       { folder: folderName },
       (error, result) => {
         if (error) return reject(error);
-        if (!result) return reject(new Error('Cloudinary upload returned no result'));
+        if (!result)
+          return reject(new Error('Cloudinary upload returned no result'));
         resolve(result.secure_url);
       },
     );

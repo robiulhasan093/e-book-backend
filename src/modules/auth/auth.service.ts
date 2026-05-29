@@ -18,8 +18,6 @@ import { ChangePasswordDto } from './dto/change.password.dto';
 import { VerifyOtpDto } from './dto/verify.otp.dto';
 import { ResetPasswordDto } from './dto/reset.password.dto';
 import { sendOtpEmail } from 'src/common/helpers/mail.helper';
-import { VerifyEmailDto } from './dto/verify-email.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
 import { uploadImageToCloudinary } from 'src/common/helpers/cloudinary.helper';
 
 @Injectable()
@@ -28,7 +26,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) { }
+  ) {}
 
   async hast(text: string) {
     const hash = await bcrypt.hash(text, 10);
@@ -85,7 +83,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
     if (!user.isVerified) {
-      throw new ForbiddenException('Please verify your email before logging in');
+      throw new ForbiddenException(
+        'Please verify your email before logging in',
+      );
     }
     if (user.status === 'SUSPENDED') {
       throw new ForbiddenException('Account suspended');
@@ -190,7 +190,11 @@ export class AuthService {
   // Profile update (email change allowed only if already verified)
   // ---------------------------------------------------------------------
   async updateProfile(
-    data: { userName?: string; contactNumber?: string; profilePhotoUrl?: string },
+    data: {
+      userName?: string;
+      contactNumber?: string;
+      profilePhotoUrl?: string;
+    },
     currentUser: { userId: string },
     file?: Express.Multer.File,
   ) {
@@ -221,7 +225,10 @@ export class AuthService {
   }
 
   // ─── Change Password (authenticated user) ────────────────────────────
-  async changePassword(data: ChangePasswordDto, currentUser: { userId: string }) {
+  async changePassword(
+    data: ChangePasswordDto,
+    currentUser: { userId: string },
+  ) {
     const { oldPassword, newPassword } = data;
 
     const user = await this.prisma.user.findUnique({
