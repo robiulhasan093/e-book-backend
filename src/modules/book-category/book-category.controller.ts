@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -14,6 +16,7 @@ import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -24,11 +27,13 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { UpdateCategoryDto } from './dto/update.category.dto';
+import { GetCurrentUser } from 'src/common/decorator/get-current-user.decorator';
+import { GetCategoriesQueryDto } from './dto/get.category.dto';
 
 @ApiTags('Book Category')
 @Controller('book-category')
 export class BookCategoryController {
-  constructor(private readonly bookCategoryService: BookCategoryService) {}
+  constructor(private readonly bookCategoryService: BookCategoryService) { }
 
   @Post('create')
   @HttpCode(HttpStatus.CREATED)
@@ -64,8 +69,24 @@ export class BookCategoryController {
     summary: 'Get all book categories',
   })
   @ApiBearerAuth('access-token')
-  async getAllCategories() {
-    const result = await this.bookCategoryService.getAllCategories();
+  @ApiQuery({
+    name: 'search',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+  })
+  async getAllCategories(
+    @Query() query: GetCategoriesQueryDto,
+  ) {
+    const result = await this.bookCategoryService.getAllCategories(query);
     return sendResponse(
       HttpStatus.OK,
       'Book categories retrieved successfully',
@@ -119,5 +140,37 @@ export class BookCategoryController {
       'Book Category Updated Successfully',
       result,
     );
-  }
+  };
+
+  //delete category
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({
+    summary: 'Delete Book Category (Admin Only)',
+  })
+  @ApiCreatedResponse({
+    description: 'Book Category Deleted Successfully',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Unauthorized',
+  })
+  @ApiForbiddenResponse({
+    description: 'Only ADMIN can delete book category',
+  })
+  async deleteBookCategory(
+    @Param('id')
+    id: string,
+    @GetCurrentUser() user: any,
+  ) {
+    const result = await this.bookCategoryService.deleteCategory(id, user.userId);
+    return sendResponse(
+      HttpStatus.OK,
+      'Book Category Deleted Successfully',
+      result,
+    );
+  };
+
 }

@@ -1,11 +1,3 @@
-/*
-  Warnings:
-
-  - You are about to drop the `PropertyCalculation` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `ScoreBreakdown` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `users` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('USER', 'ADMIN', 'MODERATOR');
 
@@ -18,33 +10,6 @@ CREATE TYPE "BookCondition" AS ENUM ('NEW', 'LIKE_NEW', 'USED_GOOD', 'USED_FAIR'
 -- CreateEnum
 CREATE TYPE "BookStatus" AS ENUM ('AVAILABLE', 'RESERVED', 'SOLD');
 
--- DropForeignKey
-ALTER TABLE "PropertyCalculation" DROP CONSTRAINT "PropertyCalculation_userId_fkey";
-
--- DropForeignKey
-ALTER TABLE "ScoreBreakdown" DROP CONSTRAINT "ScoreBreakdown_propertyId_fkey";
-
--- DropTable
-DROP TABLE "PropertyCalculation";
-
--- DropTable
-DROP TABLE "ScoreBreakdown";
-
--- DropTable
-DROP TABLE "users";
-
--- DropEnum
-DROP TYPE "ExpenseType";
-
--- DropEnum
-DROP TYPE "Role";
-
--- DropEnum
-DROP TYPE "StrategyType";
-
--- DropEnum
-DROP TYPE "verifidStatus";
-
 -- CreateTable
 CREATE TABLE "User" (
     "userId" UUID NOT NULL,
@@ -54,8 +19,14 @@ CREATE TABLE "User" (
     "contactNumber" TEXT,
     "password" TEXT NOT NULL,
     "refreshToken" TEXT,
+    "otpCode" TEXT,
+    "otpExpiry" TIMESTAMP(3),
     "role" "UserRole" NOT NULL DEFAULT 'USER',
     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
+    "isVerified" BOOLEAN NOT NULL DEFAULT false,
+    "verificationOtp" TEXT,
+    "verificationOtpExpiry" TIMESTAMP(3),
+    "lastLogin" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -77,6 +48,8 @@ CREATE TABLE "Book" (
     "location" TEXT,
     "latitude" DECIMAL(10,8),
     "longitude" DECIMAL(11,8),
+    "isDeleted" BOOLEAN NOT NULL DEFAULT false,
+    "deletedAt" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -88,8 +61,12 @@ CREATE TABLE "BookCategory" (
     "bookCategoryId" UUID NOT NULL,
     "categoryName" TEXT NOT NULL,
     "description" TEXT,
+    "isDeleted" BOOLEAN NOT NULL DEFAULT false,
+    "deletedAt" TIMESTAMP(3),
+    "deletedBy" UUID,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "userUserId" UUID,
 
     CONSTRAINT "BookCategory_pkey" PRIMARY KEY ("bookCategoryId")
 );
@@ -161,13 +138,13 @@ CREATE TABLE "ChatRoomMember" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_userName_key" ON "User"("userName");
-
--- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_contactNumber_key" ON "User"("contactNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_verificationOtp_key" ON "User"("verificationOtp");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "BookCategory_categoryName_key" ON "BookCategory"("categoryName");
@@ -186,6 +163,12 @@ ALTER TABLE "Book" ADD CONSTRAINT "Book_copyOwner_fkey" FOREIGN KEY ("copyOwner"
 
 -- AddForeignKey
 ALTER TABLE "Book" ADD CONSTRAINT "Book_bookCategoryId_fkey" FOREIGN KEY ("bookCategoryId") REFERENCES "BookCategory"("bookCategoryId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookCategory" ADD CONSTRAINT "BookCategory_deletedBy_fkey" FOREIGN KEY ("deletedBy") REFERENCES "User"("userId") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookCategory" ADD CONSTRAINT "BookCategory_userUserId_fkey" FOREIGN KEY ("userUserId") REFERENCES "User"("userId") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "BookImage" ADD CONSTRAINT "BookImage_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("bookId") ON DELETE CASCADE ON UPDATE CASCADE;
