@@ -8,6 +8,7 @@ import { UserModule } from './modules/user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { BookCategoryModule } from './modules/book-category/book-category.module';
+import { BookModule } from './modules/book/book.module';
 import envConfig from './config/env.config';
 
 @Module({
@@ -22,6 +23,7 @@ import envConfig from './config/env.config';
     UserModule,
     CloudinaryModule,
     BookCategoryModule,
+    BookModule,
   ],
   controllers: [AppController],
   providers: [AppService],

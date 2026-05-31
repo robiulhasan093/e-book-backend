@@ -10,7 +10,7 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class BookCategoryService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   // create book category
   async createCategory(dto: CreateBookCategoryDto) {
@@ -92,7 +92,7 @@ export class BookCategoryService {
     const category = await this.prisma.bookCategory.findUnique({
       where: {
         bookCategoryId: id,
-        isDeleted: false
+        isDeleted: false,
       },
     });
 
@@ -108,7 +108,7 @@ export class BookCategoryService {
     const existingCategory = await this.prisma.bookCategory.findUnique({
       where: {
         bookCategoryId: id,
-        isDeleted: false
+        isDeleted: false,
       },
     });
     if (!existingCategory) {
@@ -129,14 +129,14 @@ export class BookCategoryService {
     });
 
     return category;
-  };
+  }
 
   //delete category
   async deleteCategory(id: string, userId: string) {
     const existingCategory = await this.prisma.bookCategory.findUnique({
       where: {
         bookCategoryId: id,
-        isDeleted: false
+        isDeleted: false,
       },
     });
     if (!existingCategory) {

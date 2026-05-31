@@ -23,6 +23,17 @@ export const ERROR_MESSAGES = {
     PHONE_ALREADY_EXISTS: 'Phone number already registered',
   },
 
+  // Book
+  BOOK: {
+    BOOK_NOT_FOUND: 'Book not found',
+    BOOK_ALREADY_EXISTS: 'Book already exists',
+    UNAUTHORIZED_UPDATE: 'You are not authorized to update this book',
+    UNAUTHORIZED_DELETE: 'You are not authorized to delete this book',
+    ALREADY_IN_FAVOURITES: 'Book is already in your favourites',
+    NOT_IN_FAVOURITES: 'Book is not in your favourites',
+    CATEGORY_NOT_FOUND: 'Book category not found',
+  },
+
   // Authorization
   AUTHORIZATION: {
     UNAUTHORIZED: 'You are not authorized to perform this action',

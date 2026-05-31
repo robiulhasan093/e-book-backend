@@ -33,7 +33,7 @@ import { GetCategoriesQueryDto } from './dto/get.category.dto';
 @ApiTags('Book Category')
 @Controller('book-category')
 export class BookCategoryController {
-  constructor(private readonly bookCategoryService: BookCategoryService) { }
+  constructor(private readonly bookCategoryService: BookCategoryService) {}
 
   @Post('create')
   @HttpCode(HttpStatus.CREATED)
@@ -83,9 +83,7 @@ export class BookCategoryController {
     required: false,
     type: Number,
   })
-  async getAllCategories(
-    @Query() query: GetCategoriesQueryDto,
-  ) {
+  async getAllCategories(@Query() query: GetCategoriesQueryDto) {
     const result = await this.bookCategoryService.getAllCategories(query);
     return sendResponse(
       HttpStatus.OK,
@@ -140,7 +138,7 @@ export class BookCategoryController {
       'Book Category Updated Successfully',
       result,
     );
-  };
+  }
 
   //delete category
   @Delete(':id')
@@ -165,12 +163,14 @@ export class BookCategoryController {
     id: string,
     @GetCurrentUser() user: any,
   ) {
-    const result = await this.bookCategoryService.deleteCategory(id, user.userId);
+    const result = await this.bookCategoryService.deleteCategory(
+      id,
+      user.userId,
+    );
     return sendResponse(
       HttpStatus.OK,
       'Book Category Deleted Successfully',
       result,
     );
-  };
-
+  }
 }

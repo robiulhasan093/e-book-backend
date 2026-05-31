@@ -86,7 +86,8 @@ model Book {
 
   copyOwner String @db.Uuid
 
-  price Decimal @db.Decimal(10, 2)
+  isFree Boolean @default(false)
+  price  Decimal @default(0) @db.Decimal(10, 2)
 
   description String?
   location    String?

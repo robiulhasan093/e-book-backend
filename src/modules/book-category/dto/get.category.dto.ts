@@ -4,7 +4,6 @@ import { Type } from 'class-transformer';
 
 export class GetCategoriesQueryDto {
   @ApiPropertyOptional({
-    example: 'science',
     description: 'Search by category name',
   })
   @IsOptional()

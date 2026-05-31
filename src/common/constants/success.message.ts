@@ -19,6 +19,18 @@ export const SUCCESS_MESSAGES = {
     USER_DELETED: 'User deleted successfully',
   },
 
+  // Book
+  BOOK: {
+    BOOK_CREATED: 'Book created successfully',
+    BOOK_UPDATED: 'Book updated successfully',
+    BOOK_DELETED: 'Book deleted successfully',
+    BOOK_FETCHED: 'Book fetched successfully',
+    BOOKS_FETCHED: 'Books fetched successfully',
+    ADDED_TO_FAVOURITES: 'Book added to favourites',
+    REMOVED_FROM_FAVOURITES: 'Book removed from favourites',
+    FAVOURITES_FETCHED: 'Favourite books fetched successfully',
+  },
+
   // Booking
   BID: {
     BOOKING_CREATED: 'Booking created successfully',
