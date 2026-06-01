@@ -9,12 +9,12 @@ import { Redis } from 'ioredis';
 let apm: any;
 try {
   apm = require('elastic-apm-node');
-} catch {}
+} catch { }
 
 let RedisStore: any;
 try {
   RedisStore = require('rate-limit-redis');
-} catch {}
+} catch { }
 
 export async function getAvailablePort(
   startPort: number,
@@ -22,21 +22,28 @@ export async function getAvailablePort(
 ): Promise<number> {
   return new Promise((resolve, reject) => {
     let attempts = 0;
+
     const tryPort = (port: number) => {
       const server = net.createServer();
+
       server.once('error', (err: NodeJS.ErrnoException) => {
         if (err.code === 'EADDRINUSE') {
           attempts++;
           if (attempts >= maxAttempts) reject(err);
           else tryPort(port + 1);
-        } else reject(err);
+        } else {
+          reject(err);
+        }
       });
+
       server.once('listening', () => {
         server.close();
         resolve(port);
       });
+
       server.listen(port);
     };
+
     tryPort(startPort);
   });
 }
@@ -48,6 +55,7 @@ export function initializeAPM(
   if (nodeEnv === 'production' && apm) {
     const apmServerUrl = configService.get('APM_SERVER_URL');
     const apmSecretToken = configService.get('APM_SECRET_TOKEN');
+
     if (apmServerUrl && apmSecretToken) {
       apm.start({
         serviceName: 'service-marketplace-api',
@@ -91,6 +99,7 @@ export function setupRateLimiting(
 
   if (redisUrl && RedisStore) {
     const redisClient = new Redis(redisUrl);
+
     app.use(
       rateLimit({
         windowMs,
@@ -115,6 +124,7 @@ export function setupSecurity(
       contentSecurityPolicy: nodeEnv === 'production' ? undefined : false,
     }),
   );
+
   app.enableCors({
     origin: true,
     credentials: true,
@@ -124,30 +134,52 @@ export function setupSecurity(
 export function setupRequestLogging(app: any, logger: Logger): void {
   app.use((req: any, res: any, next: any) => {
     const start = Date.now();
+
     res.on('finish', () => {
       logger.log(
         `${req.method} ${req.url} ${res.statusCode} ${Date.now() - start}ms`,
       );
     });
+
     next();
   });
 }
 
-export function setupSwagger(app: any, nodeEnv: string, port: number): void {
-  if (nodeEnv === 'production') return;
+/**
+ * Swagger setup with dynamic base URL (FIXED for deployment)
+ */
+export function setupSwagger(
+  app: any,
+  nodeEnv: string,
+  port: number,
+  configService: ConfigService,
+): void {
+  // if (nodeEnv === 'production') return;
+  if (nodeEnv === 'production' && !configService.get('ENABLE_SWAGGER')) {
+    return;
+  }
+
+  // const baseUrl =
+  //   nodeEnv === 'production'
+  //     ? configService.get<string>('APP_URL')
+  //     : `http://localhost:${port}`;
+  const baseUrl = configService.get<string>('APP_URL');
+
+  if (!baseUrl) {
+    throw new Error('APP_URL is not defined in production environment');
+  }
 
   const config = new DocumentBuilder()
     .setTitle('NestJS Prisma Template API')
     .setDescription(
-      'A production-ready NestJS + Prisma API template.\n\n' +
-        '        **Base URL:** `http://localhost:' +
-        port +
-        '`\n\n' +
-        '        **Auth:** Use the `POST /api/v1/auth/login` endpoint to obtain a Bearer token, ' +
-        'then click **Authorize** above.',
+      `A production-ready NestJS + Prisma API template.
+
+Base URL: \`${baseUrl}\`
+
+Auth: Use POST /api/v1/auth/login to obtain a Bearer token, then click **Authorize**.`,
     )
     .setVersion('1.0.0')
-    .addServer(`http://localhost:${port}`, 'Local Development')
+    .addServer(baseUrl, 'API Server')
     .addBearerAuth(
       {
         type: 'http',
@@ -162,6 +194,7 @@ export function setupSwagger(app: any, nodeEnv: string, port: number): void {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
+
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
@@ -170,5 +203,180 @@ export function setupSwagger(app: any, nodeEnv: string, port: number): void {
     },
   });
 
-  new Logger('Swagger').log(`Swagger: http://localhost:${port}/docs`);
+  new Logger('Swagger').log(`Swagger: ${baseUrl}/docs`);
 }
+
+// import { Logger } from '@nestjs/common';
+// import { ConfigService } from '@nestjs/config';
+// import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+// import helmet from 'helmet';
+// import * as net from 'net';
+// import rateLimit from 'express-rate-limit';
+// import { Redis } from 'ioredis';
+
+// let apm: any;
+// try {
+//   apm = require('elastic-apm-node');
+// } catch {}
+
+// let RedisStore: any;
+// try {
+//   RedisStore = require('rate-limit-redis');
+// } catch {}
+
+// export async function getAvailablePort(
+//   startPort: number,
+//   maxAttempts = 10,
+// ): Promise<number> {
+//   return new Promise((resolve, reject) => {
+//     let attempts = 0;
+//     const tryPort = (port: number) => {
+//       const server = net.createServer();
+//       server.once('error', (err: NodeJS.ErrnoException) => {
+//         if (err.code === 'EADDRINUSE') {
+//           attempts++;
+//           if (attempts >= maxAttempts) reject(err);
+//           else tryPort(port + 1);
+//         } else reject(err);
+//       });
+//       server.once('listening', () => {
+//         server.close();
+//         resolve(port);
+//       });
+//       server.listen(port);
+//     };
+//     tryPort(startPort);
+//   });
+// }
+
+// export function initializeAPM(
+//   configService: ConfigService,
+//   nodeEnv: string,
+// ): void {
+//   if (nodeEnv === 'production' && apm) {
+//     const apmServerUrl = configService.get('APM_SERVER_URL');
+//     const apmSecretToken = configService.get('APM_SECRET_TOKEN');
+//     if (apmServerUrl && apmSecretToken) {
+//       apm.start({
+//         serviceName: 'service-marketplace-api',
+//         secretToken: apmSecretToken,
+//         serverUrl: apmServerUrl,
+//         environment: nodeEnv,
+//         active: true,
+//       });
+//     }
+//   }
+// }
+
+// export function setupInMemoryRateLimiting(
+//   app: any,
+//   windowMs: number,
+//   max: number,
+// ) {
+//   app.use(
+//     rateLimit({
+//       windowMs,
+//       max,
+//       skip: (req: any) =>
+//         ['/health', '/metrics', '/docs'].some((p) => req.url.includes(p)),
+//     }),
+//   );
+// }
+
+// export function setupRateLimiting(
+//   app: any,
+//   configService: ConfigService,
+//   nodeEnv: string,
+// ): void {
+//   if (nodeEnv !== 'production') return;
+
+//   const windowMs = configService.get<number>(
+//     'RATE_LIMIT_WINDOW_MS',
+//     15 * 60 * 1000,
+//   );
+//   const max = configService.get<number>('RATE_LIMIT_MAX', 100);
+//   const redisUrl = configService.get('REDIS_URL');
+
+//   if (redisUrl && RedisStore) {
+//     const redisClient = new Redis(redisUrl);
+//     app.use(
+//       rateLimit({
+//         windowMs,
+//         max,
+//         store: new RedisStore({ client: redisClient }),
+//         skip: (req: any) =>
+//           ['/health', '/metrics', '/docs'].some((p) => req.url.includes(p)),
+//       }),
+//     );
+//   } else {
+//     setupInMemoryRateLimiting(app, windowMs, max);
+//   }
+// }
+
+// export function setupSecurity(
+//   app: any,
+//   configService: ConfigService,
+//   nodeEnv: string,
+// ): void {
+//   app.use(
+//     helmet({
+//       contentSecurityPolicy: nodeEnv === 'production' ? undefined : false,
+//     }),
+//   );
+//   app.enableCors({
+//     origin: true,
+//     credentials: true,
+//   });
+// }
+
+// export function setupRequestLogging(app: any, logger: Logger): void {
+//   app.use((req: any, res: any, next: any) => {
+//     const start = Date.now();
+//     res.on('finish', () => {
+//       logger.log(
+//         `${req.method} ${req.url} ${res.statusCode} ${Date.now() - start}ms`,
+//       );
+//     });
+//     next();
+//   });
+// }
+
+// export function setupSwagger(app: any, nodeEnv: string, port: number): void {
+//   if (nodeEnv === 'production') return;
+
+//   const config = new DocumentBuilder()
+//     .setTitle('NestJS Prisma Template API')
+//     .setDescription(
+//       'A production-ready NestJS + Prisma API template.\n\n' +
+//         '        **Base URL:** `http://localhost:' +
+//         port +
+//         '`\n\n' +
+//         '        **Auth:** Use the `POST /api/v1/auth/login` endpoint to obtain a Bearer token, ' +
+//         'then click **Authorize** above.',
+//     )
+//     .setVersion('1.0.0')
+//     .addServer(`http://localhost:${port}`, 'Local Development')
+//     .addBearerAuth(
+//       {
+//         type: 'http',
+//         scheme: 'bearer',
+//         bearerFormat: 'JWT',
+//         description: 'Enter your JWT access token',
+//       },
+//       'access-token',
+//     )
+//     .addTag('Auth', 'Authentication & authorization endpoints')
+//     .addTag('User', 'User management endpoints')
+//     .build();
+
+//   const document = SwaggerModule.createDocument(app, config);
+//   SwaggerModule.setup('docs', app, document, {
+//     swaggerOptions: {
+//       persistAuthorization: true,
+//       tagsSorter: 'alpha',
+//       operationsSorter: 'alpha',
+//     },
+//   });
+
+//   new Logger('Swagger').log(`Swagger: http://localhost:${port}/docs`);
+// }
