@@ -71,6 +71,7 @@ model User {
   createdRooms   ChatRoom[]
   roomMembers    ChatRoomMember[]
   bookCategories BookCategory[]
+  notifications Notification[]
 }
 
 model Book {
@@ -181,6 +182,8 @@ model Chat {
 
   message String
 
+  isSeen Boolean @default(false)
+
   sentAt DateTime  @default(now())
   readAt DateTime?
 
@@ -218,4 +221,28 @@ model ChatRoomMember {
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@unique([roomId, userId])
+}
+
+
+enum NotificationType {
+  MESSAGE
+  BOOK_LIKED
+  BOOK_PURCHASED
+}
+
+model Notification {
+  notificationId String @id @default(uuid()) @db.Uuid
+
+  receiverId String @db.Uuid
+
+  title String
+  body String
+
+  type NotificationType
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  receiver User @relation(fields:[receiverId], references:[userId], onDelete: Cascade)
 }

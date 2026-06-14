@@ -9,6 +9,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { BookCategoryModule } from './modules/book-category/book-category.module';
 import { BookModule } from './modules/book/book.module';
+import { SocketModule } from './socket/socket.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import envConfig from './config/env.config';
 
 @Module({
@@ -24,6 +27,9 @@ import envConfig from './config/env.config';
     CloudinaryModule,
     BookCategoryModule,
     BookModule,
+    SocketModule,
+    ChatModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

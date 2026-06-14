@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat — Socket.IO Test Client</title>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset & Base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-app: #0f1117;
+  --bg-panel: #1a1d27;
+  --bg-input: #252836;
+  --bg-hover: #2d3145;
+  --accent: #6c63ff;
+  --accent-dim: #4e47cc;
+  --accent-glow: rgba(108,99,255,.25);
+  --green: #22c55e;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --text: #e2e8f0;
+  --text-muted: #8892a4;
+  --border: #2a2d3e;
+  --msg-out: #6c63ff;
+  --msg-in: #252836;
+  --radius: 12px;
+  --sidebar-w: 300px;
+  --log-w: 290px;
+}
+body { font-family: 'Inter', system-ui, sans-serif; font-size: 13px; background: var(--bg-app); color: var(--text); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+button { cursor: pointer; font-family: inherit; } input, textarea { font-family: inherit; }
+
+/* ─── Topbar ──────────────────────────────────────────────────────────── */
+.topbar { background: var(--bg-panel); border-bottom: 1px solid var(--border); padding: 0 16px; height: 52px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; z-index: 10; }
+.topbar-logo { font-weight: 700; font-size: 15px; letter-spacing: -.3px; background: linear-gradient(135deg, #6c63ff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.topbar-url { font-size: 11px; color: var(--text-muted); flex: 1; }
+
+.pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; }
+.pill-green { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.25); }
+.pill-red   { background: rgba(239,68,68,.15);  color: var(--red);   border: 1px solid rgba(239,68,68,.25); }
+
+/* notification bell */
+.notif-bell { position: relative; background: none; border: none; color: var(--text-muted); font-size: 18px; padding: 4px 8px; border-radius: 8px; transition: color .2s, background .2s; }
+.notif-bell:hover { color: var(--text); background: var(--bg-hover); }
+.notif-badge { position: absolute; top: 0; right: 0; background: var(--red); color: #fff; font-size: 9px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 99px; display: flex; align-items: center; justify-content: center; padding: 0 3px; display: none; }
+.notif-badge.show { display: flex; }
+
+/* ─── Login overlay ────────────────────────────────────────────────────── */
+#login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 200; }
+.login-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 16px; padding: 28px 32px; width: 420px; box-shadow: 0 24px 64px rgba(0,0,0,.5); }
+.login-card h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.login-card p { color: var(--text-muted); font-size: 12px; margin-bottom: 20px; }
+.field-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 5px; margin-top: 14px; }
+.field-input { width: 100%; background: var(--bg-input); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 12px; font-size: 13px; outline: none; transition: border-color .2s; }
+.field-input:focus { border-color: var(--accent); }
+.btn-primary { width: 100%; margin-top: 20px; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; transition: background .2s, transform .1s; }
+.btn-primary:hover { background: var(--accent-dim); } .btn-primary:active { transform: scale(.98); }
+
+/* ─── Layout ────────────────────────────────────────────────────────────── */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* ─── Contacts Sidebar ─────────────────────────────────────────────────── */
+.sidebar { width: var(--sidebar-w); background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+.sidebar-header { padding: 14px 14px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sidebar-header h3 { font-size: 13px; font-weight: 600; }
+.sidebar-header .user-info { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.sidebar-header .user-info .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,var(--accent),#a78bfa); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.sidebar-header .user-info .name { font-weight: 600; font-size: 13px; }
+.sidebar-header .user-info .uid { font-size: 10px; color: var(--text-muted); }
+.search-box { width: 100%; background: var(--bg-input); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 7px 11px; font-size: 12px; outline: none; margin-top: 8px; }
+.search-box:focus { border-color: var(--accent); }
+
+.contacts { flex: 1; overflow-y: auto; padding: 6px; }
+.contact-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; cursor: pointer; transition: background .15s; position: relative; }
+.contact-item:hover { background: var(--bg-hover); }
+.contact-item.active { background: var(--accent-glow); }
+.contact-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #6c63ff, #a78bfa); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0; position: relative; }
+.online-dot { position: absolute; bottom: 1px; right: 1px; width: 10px; height: 10px; border-radius: 50%; background: var(--green); border: 2px solid var(--bg-panel); display: none; }
+.online-dot.show { display: block; }
+.offline-dot { position: absolute; bottom: 1px; right: 1px; width: 10px; height: 10px; border-radius: 50%; background: #4b5563; border: 2px solid var(--bg-panel); }
+.contact-body { flex: 1; min-width: 0; }
+.contact-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.contact-last-msg { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.contact-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.contact-time { font-size: 10px; color: var(--text-muted); }
+.unread-badge { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 99px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+
+.empty-state { text-align: center; color: var(--text-muted); padding: 40px 16px; font-size: 12px; }
+.empty-state .icon { font-size: 28px; margin-bottom: 8px; }
+
+/* refresh btn */
+.btn-icon { background: none; border: none; color: var(--text-muted); padding: 4px 6px; border-radius: 6px; font-size: 15px; transition: color .2s, background .2s; }
+.btn-icon:hover { color: var(--text); background: var(--bg-hover); }
+
+/* ─── Chat Area ────────────────────────────────────────────────────────── */
+.chat-area { flex: 1; display: flex; flex-direction: column; background: var(--bg-app); min-width: 0; }
+
+.chat-header { padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg-panel); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.chat-header .ch-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg,var(--accent),#a78bfa); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; }
+.chat-header .ch-info .ch-name { font-weight: 600; font-size: 14px; }
+.chat-header .ch-info .ch-status { font-size: 11px; color: var(--text-muted); }
+.chat-header .ch-info .ch-status.online { color: var(--green); }
+#typing-indicator { font-size: 11px; color: var(--text-muted); font-style: italic; margin-left: auto; display: none; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.no-chat-selected { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; color: var(--text-muted); }
+.no-chat-selected .big-icon { font-size: 52px; opacity: .3; }
+.no-chat-selected p { font-size: 14px; }
+
+.messages-wrap { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 6px; }
+
+/* date divider */
+.date-divider { text-align: center; font-size: 11px; color: var(--text-muted); margin: 8px 0; position: relative; }
+.date-divider::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--border); z-index: 0; }
+.date-divider span { background: var(--bg-app); padding: 0 10px; position: relative; z-index: 1; }
+
+.msg { max-width: 68%; padding: 9px 13px; border-radius: 14px; font-size: 13px; line-height: 1.55; word-break: break-word; position: relative; animation: msgIn .15s ease; }
+@keyframes msgIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: none; } }
+.msg.sent { background: var(--msg-out); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.msg.received { background: var(--msg-in); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; }
+.msg.system { background: transparent; color: var(--text-muted); align-self: center; font-size: 11px; padding: 3px 10px; max-width: 100%; }
+.msg.error { background: rgba(239,68,68,.12); color: #f87171; align-self: center; font-size: 11px; padding: 4px 12px; border-radius: 99px; border: 1px solid rgba(239,68,68,.2); }
+.msg-time { font-size: 10px; opacity: .65; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.msg.sent .msg-time { justify-content: flex-end; }
+.seen-tick { font-size: 12px; }
+.seen-tick.seen { color: #a5f3fc; }
+
+/* compose */
+.compose { padding: 10px 14px; border-top: 1px solid var(--border); background: var(--bg-panel); display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0; }
+.compose-input-wrap { flex: 1; background: var(--bg-input); border: 1px solid var(--border); border-radius: 20px; padding: 8px 14px; display: flex; align-items: center; transition: border-color .2s; }
+.compose-input-wrap:focus-within { border-color: var(--accent); }
+.compose-input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 13px; resize: none; max-height: 120px; line-height: 1.5; }
+.compose-input::placeholder { color: var(--text-muted); }
+.btn-send { width: 38px; height: 38px; background: var(--accent); border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; transition: background .2s, transform .1s; flex-shrink: 0; }
+.btn-send:hover { background: var(--accent-dim); } .btn-send:active { transform: scale(.93); }
+.btn-send:disabled { background: #2a2d3e; color: var(--text-muted); cursor: not-allowed; }
+
+/* ─── Event Log ─────────────────────────────────────────────────────────── */
+.log-panel { width: var(--log-w); background: #0d0f1a; border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+.log-panel .log-header { padding: 12px 12px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.log-panel .log-header span { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+.log-entries { flex: 1; overflow-y: auto; padding: 8px; }
+.log-entry { margin-bottom: 8px; padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.05); }
+.log-meta { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+.log-time { color: #4b5563; font-size: 10px; }
+.log-dir { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 4px; }
+.log-dir.out { background: rgba(245,158,11,.15); color: #fbbf24; }
+.log-dir.in  { background: rgba(34,197,94,.15);  color: #4ade80; }
+.log-event { font-size: 11px; color: #c4b5fd; font-weight: 600; }
+.log-data { font-size: 10px; color: #64748b; white-space: pre-wrap; word-break: break-all; font-family: 'Courier New', monospace; max-height: 60px; overflow: hidden; }
+
+/* ─── Notification Dropdown ─────────────────────────────────────────────── */
+.notif-wrap { position: relative; }
+.notif-dropdown { position: absolute; top: calc(100% + 8px); right: 0; width: 320px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,.5); z-index: 100; overflow: hidden; display: none; }
+.notif-dropdown.open { display: block; animation: dropIn .15s ease; }
+@keyframes dropIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+.notif-dd-header { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.notif-dd-header span { font-weight: 600; font-size: 13px; }
+.btn-read-all { background: none; border: none; color: var(--accent); font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 6px; }
+.btn-read-all:hover { background: var(--accent-glow); }
+.notif-list { max-height: 320px; overflow-y: auto; }
+.notif-item { padding: 11px 14px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; cursor: pointer; transition: background .15s; }
+.notif-item:hover { background: var(--bg-hover); }
+.notif-item.unread { background: rgba(108,99,255,.07); }
+.notif-item .ni-icon { font-size: 18px; flex-shrink: 0; }
+.notif-item .ni-body { flex: 1; min-width: 0; }
+.notif-item .ni-title { font-weight: 600; font-size: 12px; }
+.notif-item .ni-body-text { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.notif-item .ni-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+.notif-item .ni-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 5px; }
+.notif-empty { text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN OVERLAY ════════════════════════════════════════════════════ -->
+<div id="login-overlay">
+  <div class="login-card">
+    <h2>🔌 Chat Test Client</h2>
+    <p>Enter your JWT access token to connect to the socket server.</p>
+
+    <label class="field-label">Server URL</label>
+    <input id="server-url" class="field-input" value="http://localhost:3000" placeholder="http://localhost:3000"/>
+
+    <label class="field-label">JWT Access Token</label>
+    <input id="jwt-token" class="field-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." type="text"/>
+
+    <button class="btn-primary" onclick="doConnect()">Connect →</button>
+  </div>
+</div>
+
+<!-- ═══ TOPBAR ═══════════════════════════════════════════════════════════ -->
+<div class="topbar">
+  <span class="topbar-logo">⚡ ChatTest</span>
+  <span class="topbar-url">Server: <span id="server-display">—</span></span>
+
+  <span id="conn-status" class="pill pill-red">Disconnected</span>
+
+  <!-- Notification Bell -->
+  <div class="notif-wrap">
+    <button class="notif-bell" id="notif-bell-btn" onclick="toggleNotifDropdown()" title="Notifications">
+      🔔
+      <span class="notif-badge" id="notif-badge">0</span>
+    </button>
+    <div class="notif-dropdown" id="notif-dropdown">
+      <div class="notif-dd-header">
+        <span>Notifications</span>
+        <button class="btn-read-all" onclick="markAllNotifRead()">Mark all read</button>
+      </div>
+      <div class="notif-list" id="notif-list">
+        <div class="notif-empty">No notifications yet</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-icon" onclick="showLoginOverlay()" title="Switch account">⚙️</button>
+  <button class="btn-icon" onclick="doDisconnect()" title="Disconnect">🔌</button>
+</div>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="user-info">
+        <div class="avatar" id="my-avatar">?</div>
+        <div>
+          <div class="name" id="my-name">Not connected</div>
+          <div class="uid" id="my-uid"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <h3>Conversations</h3>
+        <button class="btn-icon" onclick="loadConversations()" title="Refresh">↻</button>
+      </div>
+      <input class="search-box" id="search-box" placeholder="🔍  Search chats…" oninput="filterContacts()"/>
+    </div>
+    <div class="contacts" id="contacts-list">
+      <div class="empty-state">
+        <div class="icon">💬</div>
+        <div>Connect to see your conversations</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Chat Area ──────────────────────────────────────────── -->
+  <div class="chat-area">
+
+    <!-- Header -->
+    <div class="chat-header" id="chat-header" style="display:none">
+      <div class="ch-avatar" id="ch-avatar">?</div>
+      <div class="ch-info">
+        <div class="ch-name" id="ch-name">—</div>
+        <div class="ch-status" id="ch-status">Offline</div>
+      </div>
+      <span id="typing-indicator">typing…</span>
+    </div>
+
+    <!-- No chat selected state -->
+    <div class="no-chat-selected" id="no-chat-placeholder">
+      <div class="big-icon">💬</div>
+      <p>Select a conversation to start chatting</p>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-wrap" id="messages" style="display:none"></div>
+
+    <!-- Compose -->
+    <div class="compose" id="compose" style="display:none">
+      <div class="compose-input-wrap">
+        <textarea id="compose-input"
+                  class="compose-input"
+                  rows="1"
+                  placeholder="Type a message…"
+                  onkeydown="handleComposeKey(event)"
+                  oninput="handleTypingInput()"></textarea>
+      </div>
+      <button class="btn-send" id="send-btn" onclick="sendFromCompose()">➤</button>
+    </div>
+  </div>
+
+  <!-- ── Event Log ──────────────────────────────────────────── -->
+  <div class="log-panel">
+    <div class="log-header">
+      <span>Event Log</span>
+      <button class="btn-icon" onclick="clearLog()">✕</button>
+    </div>
+    <div class="log-entries" id="log-entries"></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════
+let socket = null;
+let SERVER_URL = 'http://localhost:3000';
+let JWT_TOKEN  = '';
+let MY_USER_ID = '';
+let MY_NAME    = '';
+let typingTimer = null;
+let isTyping = false;
+let currentChatUserId = null;   // userId of the conversation open
+let onlineUsers = new Set();
+let conversations = [];         // cached conversation list
+let notifications = [];         // cached notifications
+let notifDropdownOpen = false;
+
+// ═══════════════════════════════════════════════════════════════
+//  CONNECTION
+// ═══════════════════════════════════════════════════════════════
+function doConnect() {
+  const urlInput   = document.getElementById('server-url').value.trim();
+  const tokenInput = document.getElementById('jwt-token').value.trim();
+  if (!urlInput) return alert('Enter a server URL');
+  if (!tokenInput) return alert('Enter your JWT token');
+
+  SERVER_URL  = urlInput;
+  JWT_TOKEN   = tokenInput;
+
+  // Decode userId from JWT payload
+  try {
+    const payload = JSON.parse(atob(tokenInput.split('.')[1]));
+    MY_USER_ID = payload.sub || payload.userId || '';
+    MY_NAME    = payload.userName || payload.email || MY_USER_ID.slice(0, 8);
+  } catch {
+    alert('Invalid JWT token — cannot decode payload');
+    return;
+  }
+
+  document.getElementById('server-display').textContent = SERVER_URL;
+  document.getElementById('login-overlay').style.display = 'none';
+
+  // Update sidebar profile
+  document.getElementById('my-avatar').textContent = initials(MY_NAME);
+  document.getElementById('my-name').textContent = MY_NAME;
+  document.getElementById('my-uid').textContent = MY_USER_ID.slice(0, 18) + '…';
+
+  // Build socket
+  if (socket) { socket.disconnect(); }
+  socket = io(SERVER_URL, {
+    transports: ['websocket'],
+    auth: { token: `Bearer ${JWT_TOKEN}` },
+  });
+
+  bindSocketEvents();
+}
+
+function doDisconnect() {
+  if (socket) { socket.disconnect(); socket = null; }
+  setConnStatus(false);
+  addSystemMsg('Disconnected manually.');
+}
+
+function showLoginOverlay() {
+  document.getElementById('login-overlay').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SOCKET EVENTS
+// ═══════════════════════════════════════════════════════════════
+function bindSocketEvents() {
+  socket.on('connect', () => {
+    setConnStatus(true);
+    logEntry('in', 'connect', { id: socket.id });
+    addSystemMsg(`Connected ✓  (socket: ${socket.id})`);
+    loadConversations();
+    loadNotifications();
+  });
+
+  socket.on('disconnect', (reason) => {
+    setConnStatus(false);
+    logEntry('in', 'disconnect', { reason });
+    addSystemMsg(`Disconnected: ${reason}`);
+  });
+
+  socket.on('connect_error', (err) => {
+    logEntry('in', 'connect_error', { message: err.message });
+    addMsg('error', `Connection error: ${err.message}`);
+  });
+
+  socket.on('error', (data) => {
+    logEntry('in', 'error', data);
+    addMsg('error', `Server error: ${data.message || JSON.stringify(data)}`);
+  });
+
+  // ── Presence ──────────────────────────────────────────────
+  socket.on('online_users', (data) => {
+    logEntry('in', 'online_users', data);
+    onlineUsers = new Set(data.userIds || []);
+    refreshOnlineDots();
+    updateChatStatus();
+  });
+
+  socket.on('user_online', (data) => {
+    logEntry('in', 'user_online', data);
+    onlineUsers.add(data.userId);
+    refreshOnlineDots();
+    updateChatStatus();
+  });
+
+  socket.on('user_offline', (data) => {
+    logEntry('in', 'user_offline', data);
+    onlineUsers.delete(data.userId);
+    refreshOnlineDots();
+    updateChatStatus();
+  });
+
+  // ── Messaging ─────────────────────────────────────────────
+  socket.on('receive_message', (data) => {
+    logEntry('in', 'receive_message', data);
+
+    // Update conversation list (move to top, update last message)
+    updateConvLastMessage(data);
+
+    // If this message is in the active chat — render it
+    if (currentChatUserId &&
+       (data.senderId === currentChatUserId || data.receiverId === currentChatUserId)) {
+      appendMessage(data);
+
+      // Auto-mark as seen if we received it (not our own message)
+      if (data.senderId !== MY_USER_ID && data.chatId) {
+        socket.emit('message_seen', { chatId: data.chatId });
+      }
+    }
+  });
+
+  socket.on('message_seen', (data) => {
+    logEntry('in', 'message_seen', data);
+    markMessageSeen(data.chatId);
+  });
+
+  // ── Typing ────────────────────────────────────────────────
+  socket.on('typing', (data) => {
+    logEntry('in', 'typing', data);
+    if (data.senderId === currentChatUserId) {
+      showTypingIndicator();
+    }
+  });
+
+  socket.on('stop_typing', (data) => {
+    logEntry('in', 'stop_typing', data);
+    if (data.senderId === currentChatUserId) {
+      hideTypingIndicator();
+    }
+  });
+
+  // ── Notifications ─────────────────────────────────────────
+  socket.on('new_notification', (data) => {
+    logEntry('in', 'new_notification', data);
+    notifications.unshift(data);
+    renderNotifications();
+  });
+
+  socket.on('notification_count', (data) => {
+    logEntry('in', 'notification_count', data);
+    setNotifBadge(data.count);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HTTP HELPERS
+// ═══════════════════════════════════════════════════════════════
+async function apiFetch(path, options = {}) {
+  const res = await fetch(`${SERVER_URL}/api/v1${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${JWT_TOKEN}`,
+      ...(options.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  const json = await res.json();
+  // Handle wrapped response { data: ... }
+  return json?.data !== undefined ? json.data : json;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CONVERSATIONS
+// ═══════════════════════════════════════════════════════════════
+async function loadConversations() {
+  if (!JWT_TOKEN) return;
+  try {
+    conversations = await apiFetch('/chat/conversations');
+    renderConversations(conversations);
+    logEntry('in', 'HTTP:conversations', { count: conversations.length });
+  } catch (e) {
+    addSystemMsg(`Failed to load conversations: ${e.message}`);
+  }
+}
+
+function renderConversations(list) {
+  const el = document.getElementById('contacts-list');
+  if (!list || list.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">💬</div><div>No conversations yet</div></div>`;
+    return;
+  }
+  el.innerHTML = list.map(conv => {
+    const p = conv.partner;
+    const online = onlineUsers.has(p.userId);
+    const lastMsg = conv.lastMessage?.message || '';
+    const lastTime = conv.lastMessage ? timeAgo(conv.lastMessage.sentAt) : '';
+    const unread = conv.unreadCount || 0;
+    const active = currentChatUserId === p.userId ? 'active' : '';
+    const initAv = initials(p.userName || p.email || '?');
+    return `
+      <div class="contact-item ${active}" onclick="openChat('${p.userId}','${esc(p.userName || p.email)}')">
+        <div class="contact-avatar">
+          ${initAv}
+          <span class="online-dot ${online ? 'show' : ''}"></span>
+        </div>
+        <div class="contact-body">
+          <div class="contact-name">${esc(p.userName || p.email)}</div>
+          <div class="contact-last-msg">${esc(lastMsg)}</div>
+        </div>
+        <div class="contact-right">
+          <span class="contact-time">${lastTime}</span>
+          ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function filterContacts() {
+  const q = document.getElementById('search-box').value.toLowerCase();
+  const filtered = conversations.filter(c =>
+    (c.partner.userName || c.partner.email || '').toLowerCase().includes(q)
+  );
+  renderConversations(filtered);
+}
+
+function updateConvLastMessage(msg) {
+  const otherId = msg.senderId === MY_USER_ID ? msg.receiverId : msg.senderId;
+  const conv = conversations.find(c => c.partner.userId === otherId);
+  if (conv) {
+    conv.lastMessage = { message: msg.message, sentAt: msg.sentAt, isSeen: msg.isSeen, senderId: msg.senderId };
+    if (msg.receiverId === MY_USER_ID && otherId !== currentChatUserId) {
+      conv.unreadCount = (conv.unreadCount || 0) + 1;
+    }
+    // Move to top
+    conversations = [conv, ...conversations.filter(c => c.partner.userId !== otherId)];
+    renderConversations(conversations);
+  } else {
+    // New conversation — reload
+    loadConversations();
+  }
+}
+
+function refreshOnlineDots() {
+  document.querySelectorAll('.contact-item').forEach(item => {
+    const uid = item.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+    if (!uid) return;
+    const dot = item.querySelector('.online-dot');
+    if (dot) { dot.classList.toggle('show', onlineUsers.has(uid)); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  OPEN CHAT
+// ═══════════════════════════════════════════════════════════════
+async function openChat(userId, userName) {
+  currentChatUserId = userId;
+
+  // Update header
+  document.getElementById('chat-header').style.display = 'flex';
+  document.getElementById('no-chat-placeholder').style.display = 'none';
+  document.getElementById('messages').style.display = 'flex';
+  document.getElementById('compose').style.display = 'flex';
+
+  document.getElementById('ch-avatar').textContent = initials(userName);
+  document.getElementById('ch-name').textContent = userName;
+  updateChatStatus();
+
+  // Re-render contacts to mark active
+  renderConversations(conversations);
+
+  // Load message history
+  document.getElementById('messages').innerHTML = `<div class="msg system">Loading messages…</div>`;
+  try {
+    const result = await apiFetch(`/chat/messages/${userId}?page=1&limit=50`);
+    const msgs = result.data || result;
+    renderMessages(msgs);
+    // Reset unread for this conversation
+    const conv = conversations.find(c => c.partner.userId === userId);
+    if (conv) { conv.unreadCount = 0; renderConversations(conversations); }
+    logEntry('in', 'HTTP:messages', { count: msgs.length });
+  } catch (e) {
+    document.getElementById('messages').innerHTML = `<div class="msg error">Failed to load messages: ${e.message}</div>`;
+  }
+}
+
+function renderMessages(msgs) {
+  const el = document.getElementById('messages');
+  el.innerHTML = '';
+  if (!msgs || msgs.length === 0) {
+    el.innerHTML = `<div class="msg system">No messages yet. Say hello! 👋</div>`;
+    return;
+  }
+  let lastDate = '';
+  msgs.forEach(m => {
+    const d = new Date(m.sentAt).toLocaleDateString();
+    if (d !== lastDate) {
+      el.innerHTML += `<div class="date-divider"><span>${d}</span></div>`;
+      lastDate = d;
+    }
+    el.innerHTML += buildMsgEl(m);
+  });
+  el.scrollTop = el.scrollHeight;
+}
+
+function appendMessage(m) {
+  const el = document.getElementById('messages');
+  if (el.style.display === 'none') return;
+  el.insertAdjacentHTML('beforeend', buildMsgEl(m));
+  el.scrollTop = el.scrollHeight;
+}
+
+function buildMsgEl(m) {
+  const isMine = m.senderId === MY_USER_ID;
+  const t = new Date(m.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const seenHtml = isMine
+    ? `<span class="seen-tick ${m.isSeen ? 'seen' : ''}">✓✓</span>`
+    : '';
+  return `
+    <div class="msg ${isMine ? 'sent' : 'received'}" data-chat-id="${m.chatId}">
+      ${esc(m.message)}
+      <div class="msg-time">${t} ${seenHtml}</div>
+    </div>`;
+}
+
+function markMessageSeen(chatId) {
+  const el = document.querySelector(`.msg[data-chat-id="${chatId}"] .seen-tick`);
+  if (el) { el.classList.add('seen'); }
+}
+
+function updateChatStatus() {
+  if (!currentChatUserId) return;
+  const status = document.getElementById('ch-status');
+  const online = onlineUsers.has(currentChatUserId);
+  status.textContent = online ? 'Online' : 'Offline';
+  status.className = 'ch-status' + (online ? ' online' : '');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SEND MESSAGE
+// ═══════════════════════════════════════════════════════════════
+function sendFromCompose() {
+  const input = document.getElementById('compose-input');
+  const msg = input.value.trim();
+  if (!msg || !currentChatUserId || !socket) return;
+
+  const dto = { receiverId: currentChatUserId, message: msg };
+  socket.emit('send_message', dto);
+  logEntry('out', 'send_message', dto);
+
+  // Optimistic render
+  appendMessage({
+    chatId: 'pending-' + Date.now(),
+    senderId: MY_USER_ID,
+    receiverId: currentChatUserId,
+    message: msg,
+    sentAt: new Date().toISOString(),
+    isSeen: false,
+  });
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Stop typing
+  stopTypingEmit();
+}
+
+function handleComposeKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendFromCompose();
+  }
+  // Auto-grow textarea
+  e.target.style.height = 'auto';
+  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TYPING
+// ═══════════════════════════════════════════════════════════════
+function handleTypingInput() {
+  if (!currentChatUserId || !socket) return;
+
+  if (!isTyping) {
+    isTyping = true;
+    socket.emit('typing', { receiverId: currentChatUserId });
+    logEntry('out', 'typing', { receiverId: currentChatUserId });
+  }
+
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => stopTypingEmit(), 2000);
+
+  // Auto-grow
+  const ta = document.getElementById('compose-input');
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+}
+
+function stopTypingEmit() {
+  if (!isTyping || !socket || !currentChatUserId) return;
+  isTyping = false;
+  socket.emit('stop_typing', { receiverId: currentChatUserId });
+  logEntry('out', 'stop_typing', { receiverId: currentChatUserId });
+}
+
+function showTypingIndicator() {
+  const ti = document.getElementById('typing-indicator');
+  ti.style.display = 'block';
+  clearTimeout(ti._t);
+  ti._t = setTimeout(hideTypingIndicator, 3500);
+}
+
+function hideTypingIndicator() {
+  document.getElementById('typing-indicator').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════
+async function loadNotifications() {
+  if (!JWT_TOKEN) return;
+  try {
+    const result = await apiFetch('/notifications?limit=20');
+    notifications = result.data || result;
+    const unread = result.meta?.unreadCount ?? notifications.filter(n => !n.isRead).length;
+    setNotifBadge(unread);
+    renderNotifications();
+    logEntry('in', 'HTTP:notifications', { count: notifications.length });
+  } catch (e) {
+    // silent
+  }
+}
+
+function renderNotifications() {
+  const el = document.getElementById('notif-list');
+  const unread = notifications.filter(n => !n.isRead).length;
+  setNotifBadge(unread);
+
+  if (!notifications.length) {
+    el.innerHTML = `<div class="notif-empty">No notifications yet 🔕</div>`;
+    return;
+  }
+  el.innerHTML = notifications.map(n => `
+    <div class="notif-item ${n.isRead ? '' : 'unread'}"
+         onclick="readNotif('${n.notificationId}')"
+         id="notif-${n.notificationId}">
+      <span class="ni-icon">${notifIcon(n.type)}</span>
+      <div class="ni-body">
+        <div class="ni-title">${esc(n.title)}</div>
+        <div class="ni-body-text">${esc(n.body)}</div>
+        <div class="ni-time">${timeAgo(n.createdAt)}</div>
+      </div>
+      ${!n.isRead ? '<span class="ni-dot"></span>' : ''}
+    </div>`).join('');
+}
+
+async function readNotif(id) {
+  const n = notifications.find(x => x.notificationId === id);
+  if (!n || n.isRead) return;
+  try {
+    await apiFetch(`/notifications/${id}/read`, { method: 'PATCH' });
+    n.isRead = true;
+    logEntry('out', 'HTTP:PATCH notifications/read', { id });
+    renderNotifications();
+  } catch (e) { /* silent */ }
+}
+
+async function markAllNotifRead() {
+  try {
+    await apiFetch('/notifications/read-all', { method: 'PATCH' });
+    logEntry('out', 'HTTP:PATCH notifications/read-all', {});
+    notifications.forEach(n => n.isRead = true);
+    renderNotifications();
+  } catch (e) { /* silent */ }
+}
+
+function toggleNotifDropdown() {
+  notifDropdownOpen = !notifDropdownOpen;
+  document.getElementById('notif-dropdown').classList.toggle('open', notifDropdownOpen);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.notif-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    notifDropdownOpen = false;
+    document.getElementById('notif-dropdown').classList.remove('open');
+  }
+});
+
+function setNotifBadge(count) {
+  const badge = document.getElementById('notif-badge');
+  badge.textContent = count > 99 ? '99+' : count;
+  badge.classList.toggle('show', count > 0);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════════════
+function setConnStatus(connected) {
+  const el = document.getElementById('conn-status');
+  el.textContent = connected ? 'Connected' : 'Disconnected';
+  el.className = 'pill ' + (connected ? 'pill-green' : 'pill-red');
+}
+
+function addSystemMsg(text) {
+  addMsg('system', text);
+}
+
+function addMsg(type, text) {
+  const el = document.getElementById('messages');
+  if (!el || el.style.display === 'none') return;
+  const d = document.createElement('div');
+  d.className = `msg ${type}`;
+  d.textContent = text;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+function logEntry(dir, event, data) {
+  const container = document.getElementById('log-entries');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  const t = new Date().toLocaleTimeString([], { hour12: false });
+  const dataStr = JSON.stringify(data, null, 1);
+  entry.innerHTML = `
+    <div class="log-meta">
+      <span class="log-time">${t}</span>
+      <span class="log-dir ${dir}">${dir.toUpperCase()}</span>
+      <span class="log-event">${event}</span>
+    </div>
+    <div class="log-data">${esc(dataStr)}</div>`;
+  container.insertBefore(entry, container.firstChild);
+
+  // Cap log at 100 entries
+  while (container.children.length > 100) container.removeChild(container.lastChild);
+}
+
+function clearLog() {
+  document.getElementById('log-entries').innerHTML = '';
+}
+
+function initials(name = '') {
+  return name.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
+}
+
+function esc(str = '') {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function notifIcon(type) {
+  return { MESSAGE: '💬', BOOK_LIKED: '❤️', BOOK_PURCHASED: '🛒' }[type] || '🔔';
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60); if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60); if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+</script>
+</body>
+</html>
