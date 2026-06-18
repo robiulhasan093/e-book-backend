@@ -21,7 +21,10 @@ function createTransporter() {
     host: process.env.EMAIL_HOST!,
     port: 465,
     secure: true,
-    family: 4,
+    // Railway's container network sometimes masks the external IPv4 interface, 
+    // causing Nodemailer to only attempt IPv6 connections which fail with ENETUNREACH.
+    // This setting forces Nodemailer to also resolve and attempt IPv4 connections.
+    allowInternalNetworkInterfaces: true,
     auth: {
       user: process.env.EMAIL_USER!,
       pass: process.env.EMAIL_PASSWORD!,
