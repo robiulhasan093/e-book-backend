@@ -19,10 +19,9 @@ import * as nodemailer from 'nodemailer';
 function createTransporter() {
   return nodemailer.createTransport({
     host: process.env.EMAIL_HOST!,
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     family: 4,
-    requireTLS: true,
     auth: {
       user: process.env.EMAIL_USER!,
       pass: process.env.EMAIL_PASSWORD!,
