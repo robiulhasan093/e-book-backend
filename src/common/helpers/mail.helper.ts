@@ -3,16 +3,31 @@ import * as nodemailer from 'nodemailer';
 /**
  * Create a reusable SMTP transporter using environment variables.
  */
+// function createTransporter() {
+//   return nodemailer.createTransport({
+//     host: process.env.EMAIL_HOST,
+//     port: Number(process.env.EMAIL_PORT) || 587,
+//     secure: Number(process.env.EMAIL_PORT) === 465,
+//     auth: {
+//       user: process.env.EMAIL_USER,
+//       pass: process.env.EMAIL_PASSWORD,
+//     },
+//   });
+// }
+
+//For raliway
 function createTransporter() {
   return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: Number(process.env.EMAIL_PORT) || 587,
-    secure: Number(process.env.EMAIL_PORT) === 465,
+    host: process.env.EMAIL_HOST!,
+    port: 587,
+    secure: false,
+    family: 4,
+    requireTLS: true,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
+      user: process.env.EMAIL_USER!,
+      pass: process.env.EMAIL_PASSWORD!,
     },
-  });
+  } as nodemailer.TransportOptions);
 }
 
 /**
