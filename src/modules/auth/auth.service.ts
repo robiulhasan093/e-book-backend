@@ -99,10 +99,13 @@ export class AuthService {
     const tokens = await this.generateTokens(user.userId, user.email);
     // Update refresh token storage
     await this.updateRefreshToken(user.userId, tokens.refreshToken);
-    // Record last login timestamp
+    // Record last login timestamp and fcm token if provided
     await this.prisma.user.update({
       where: { userId: user.userId },
-      data: { lastLogin: new Date() },
+      data: {
+        lastLogin: new Date(),
+        ...(data.fcmToken && { fcmToken: data.fcmToken }),
+      },
     });
 
     const { password, refreshToken, otpCode, otpExpiry, ...rest } = user;

@@ -12,6 +12,8 @@ import { BookModule } from './modules/book/book.module';
 import { SocketModule } from './socket/socket.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { BannerModule } from './modules/banner/banner.module';
+import { TermsServiceModule } from './modules/terms-service/terms-service.module';
 import envConfig from './config/env.config';
 
 @Module({
@@ -30,6 +32,8 @@ import envConfig from './config/env.config';
     SocketModule,
     ChatModule,
     NotificationModule,
+    BannerModule,
+    TermsServiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
